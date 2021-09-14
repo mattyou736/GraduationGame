@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba1180d9f0aa8a045b95d1e778b59eb3, type: 3}
+  m_Name: TestActor 1
+  m_EditorClassIdentifier: 
+  name: Member1
+  characterObject: {fileID: 2736575735045372330, guid: 67a5d3504962f954dbb18b7d88c32373,
+    type: 3}
+  characterImage: {fileID: 2736575735045372328, guid: 67a5d3504962f954dbb18b7d88c32373,
+    type: 3}
+  health: 100
+  maxHealth: 100
+  speed: 7
+  ac: 100
+  maxAc: 100
+  fire: 0
+  lighting: 0
+  water: 1
+  neutral: 0
+  physical: 0
+  ranged: 0
+  slicing: 1
+  actions:
+  - {fileID: 11400000, guid: 9fed44efb5ee65c4c8c7577314912bff, type: 2}
+  - {fileID: 11400000, guid: 9b456f5c4d8fae34e832c176a3d4e55d, type: 2}
+  - {fileID: 11400000, guid: 076087d77f5d22443990b25839d6e445, type: 2}
+  gold: 25
+  attackRange: {x: 1, y: 5}
