@@ -7,7 +7,7 @@ public class PlayerMovement : MonoBehaviour
 	public float moveSpeed;
 
 	//animations
-	//private Animator anim;
+	private Animator anim;
 
 	//rigidbody
 	private Rigidbody2D RigidPlayer;
@@ -16,17 +16,20 @@ public class PlayerMovement : MonoBehaviour
 	private bool Moving;
 	public Vector2 lastMove;
 
+    PlayerStats playerStats;
+
 	private static bool playerExists;
 
     public bool canMove;
 
-
     // Use this for initialization
     void Start () 
 	{
-		//anim = GetComponent<Animator> ();
-		RigidPlayer = GetComponent<Rigidbody2D> ();
-        canMove = true;
+        playerStats = GetComponent<PlayerStats>();
+
+        anim = GetComponent<Animator> ();
+        RigidPlayer = GetComponent<Rigidbody2D> ();
+        
 		if (!playerExists) 
 		{
 			playerExists = true;
@@ -56,7 +59,6 @@ public class PlayerMovement : MonoBehaviour
 		//left right
 		if (Input.GetAxisRaw ("Horizontal") > 0.5f || Input.GetAxisRaw ("Horizontal") < -0.5f) 
 		{
-			//transform.Translate(new Vector3(Input.GetAxisRaw("Horizontal")* moveSpeed * Time.deltaTime , 0, 0));
 			RigidPlayer.velocity = new Vector2(Input.GetAxisRaw("Horizontal")* moveSpeed ,RigidPlayer.velocity.y);
 			Moving = true;
 			lastMove = new Vector2(Input.GetAxisRaw ("Horizontal"),0f);
@@ -65,7 +67,6 @@ public class PlayerMovement : MonoBehaviour
 		//up down
 		if (Input.GetAxisRaw ("Vertical") > 0.5f || Input.GetAxisRaw ("Vertical") < -0.5f ) 
 		{
-			//transform.Translate(new Vector3(0, Input.GetAxisRaw("Vertical")* moveSpeed * Time.deltaTime , 0));
 			RigidPlayer.velocity = new Vector2(RigidPlayer.velocity.x,Input.GetAxisRaw("Vertical")* moveSpeed );
 			Moving = true;
 			lastMove = new Vector2(0f,Input.GetAxisRaw ("Vertical"));
@@ -82,14 +83,32 @@ public class PlayerMovement : MonoBehaviour
 		}
 
 		//tell animator to do
-		/*anim.SetFloat ("MoveX", Input.GetAxisRaw ("Horizontal"));
+		anim.SetFloat ("MoveX", Input.GetAxisRaw ("Horizontal"));
 		anim.SetFloat ("MoveY", Input.GetAxisRaw ("Vertical"));
 		anim.SetBool ("Moving", Moving);
 		anim.SetFloat("LastMoveX", lastMove.x);
-		anim.SetFloat ("LastMoveY", lastMove.y);*/
+		anim.SetFloat ("LastMoveY", lastMove.y);
 
         
 
+    }
+
+    public void StartFight()
+    {
+        playerStats.GoBattle();
+    }
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if(collision.tag == "Enemy")
+        {
+            Debug.Log("collision");
+            StartFight();
+        }
+
+        if (collision.tag == "EndGame")
+        {
+            playerStats.LoadScene();
+        }
     }
 
 }

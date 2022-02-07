@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba1180d9f0aa8a045b95d1e778b59eb3, type: 3}
+  m_Name: TestActor 2
+  m_EditorClassIdentifier: 
+  name: Member2
+  characterObject: {fileID: 2920655532681278797, guid: ee61ffddea813c542ad90bb7377b549f,
+    type: 3}
+  characterImage: {fileID: 2920655532681278803, guid: ee61ffddea813c542ad90bb7377b549f,
+    type: 3}
+  health: 71
+  maxHealth: 100
+  speed: 7
+  ac: 70
+  maxAc: 100
+  weaknessElement: Lighting
+  weaknessProperty: Slicing
+  resistance: Lightning
+  actions:
+  - {fileID: 11400000, guid: 17cfd554ce3fa3f4dbabdddf2678ad37, type: 2}
+  - {fileID: 11400000, guid: 9b456f5c4d8fae34e832c176a3d4e55d, type: 2}
+  - {fileID: 11400000, guid: cbe9b319007670b419142fd594552850, type: 2}
+  - {fileID: 11400000, guid: 17fdad901de76884e8d49afb55a7aa66, type: 2}
+  status: none
+  attackRange: {x: 1, y: 20}

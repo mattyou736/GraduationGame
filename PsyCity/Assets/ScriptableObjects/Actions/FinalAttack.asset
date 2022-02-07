@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c53670b028212344cba3acdd8eda7644, type: 3}
+  m_Name: FinalAttack
+  m_EditorClassIdentifier: 
+  name: Final Attack
+  baseDamage: {x: 100, y: 110}
+  apCost: 0
+  missChance: {x: 0, y: 100000}
+  element: Final
+  property: Final
+  icon: {fileID: -8115037194750826008, guid: e7d65ce3ec7687148b6a22b736de355a, type: 3}
+  AnimationHolder: {fileID: 8162153903531050963, guid: 5b24ac6dd5ec11449afa5d577d1f08ed,
+    type: 3}
+  attackValue_: 105
+  posion: 0
+  sleep: 0
+  effectHitChance: 0

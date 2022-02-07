@@ -9,10 +9,20 @@ public class ShakeManager : MonoBehaviour
     private float strength;
     private float timeElaped = 0;
     private Vector2 originalPos;
+    public RectTransform partyWindowRect, enemyWindowRect;
 
-    public void Shake(RectTransform target, float time = 1, float strength = 3)
+
+    public void Shake(bool party, float time = 1, float strength = 3)
     {
-        this.target = target;
+        if (party)
+        {
+            target = partyWindowRect;
+        }
+        else
+        {
+            target = enemyWindowRect;
+        }
+        
         originalPos = target.anchoredPosition;
         duration = time;
         this.strength = strength;

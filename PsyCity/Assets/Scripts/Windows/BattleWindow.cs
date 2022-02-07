@@ -65,7 +65,7 @@ public class BattleWindow : GenericWindow
     public void OnAction(GenericBattleAction action, Actor target1,Actor traget2)
     {
 
-        action.Action(target1, traget2,action);//player atk monster
+        //action.Action(target1, traget2,action,action.name,enemySpawn);//player atk monster
 
         DisplayMessage(action.ToString());
         actionsGroup.SetActive(false);
@@ -168,16 +168,7 @@ public class BattleWindow : GenericWindow
     IEnumerator OnBattleOver()
     {
         var message = (partyMember1.alive ? partyMember1.name : monster.name) + " has won the battle";
-        var gold = Random.Range(0, monster.gold);
-        if(gold > 0 && partyMember1.alive)
-        {
-            //theQm.enemyKilled = enemyQuestName;
-            message += " " + partyMember1.name + " recieves $" + gold + ".";
-            //playerFlag.GetComponent<PlayerFlags>().money += gold;
-            partyMember1.IncreaseGold(gold);
-            UpdatePlayerStats();
-
-        }
+        
 
         DisplayMessage(message);
         yield return new WaitForSeconds(2);

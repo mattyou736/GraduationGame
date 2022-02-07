@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class MessageWindow : GenericWindow
 {
-    public float closeDelay = 2f;
+    public float closeDelay = 7f;
 
     private float delay;
     private bool closing;

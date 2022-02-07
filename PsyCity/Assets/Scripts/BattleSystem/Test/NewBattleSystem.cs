@@ -2,110 +2,217 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Text;
 
 public enum BattleState
 {
-    START, PLAYERTURN, ENEMYTURN, WON, LOST
+    START, PLAYERTURN, ENEMYTURN, WON, LOST, QTE
 }
 
 
 public class NewBattleSystem : GenericWindow
 {
+    //state of any given battle , used to make sure we cant do things when we arent at our turn
     public BattleState state;
-    public PlayerStats playerMan;
+    public IconHolder icons;
 
+    //party ui
     [Header("Party")]
     public Actor[] partyMembers;
+    public Inventory inventory;
     public Transform[] partyMemberSpawn;
     public Text[] partyMemberName;
     public Text[] partyMemberHP;
     public Text[] partyMemberAP;
+    public Image[] partyMemberStatus;
+    public Image[] partyMemberHPBar;
+    public Image[] partyMemberAPBar;
 
     public GameObject partyMembersActionsMenu;
     public GameObject partyMembersItemsMenu;
+    public GameObject partyMembersSelecionMenu;
 
     int currentPartyMemberTurn = 0;
+    bool partyDead = false;
+
+    //final attack
+    public Image meterToFill;
+    float metervalue;
+    public GameObject finalAttackButton;
+
+    //chances of run succes
+    [Range(0, .9f)]
+    public float runOdds = .3f;
 
     [Header("Enemy")]
     public Actor[] enemys;
-    public Actor enemy;
+    Actor enemy;
     public Transform enemySpawn;
     public Text enemyName;
     public Text enemyHP;
+    public Image enemyStatus;
+    public Image enemyHPBar;
+    public List<Actor> potencialTargets;
 
-    public ButtonSetter action1, action2, action3;
-
+    //buttons
+    public ButtonSetter action1, action2, action3, item1, item2, memberButton1, memberButton2, memberButton3;
+    GameObject PartymemberImage1, PartymemberImage2, PartymemberImage3, enemyImage;
     private ShakeManager shakeManager;
-    public RectTransform partyWindowRect, enemyWindowRect;
-    //public RectTransform monsterRect;
+    
 
     public delegate void BattleOver(bool playerWin);
     public BattleOver battleOverCallback;
+    public List<GenericBattleAction> comboList = null;
 
+    Item item_;
+    PlayerMovement player;
+
+    //QTE Variables
+    public GameObject QTEObject;
+    int _actionInt;
+    public GameObject DamText;
+
+    //bgm
+    public AudioManager BGM;
+    
 
     // Start is called before the first frame update
     void OnEnable()
     {
+        player = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerMovement>();
         shakeManager = GetComponent<ShakeManager>();
-        state = BattleState.START;
-        SetupBattle();
+
+        ChangeState(BattleState.START);
     }
 
-    private void Update()
+    void ChangeState(BattleState _state)
     {
-        if (Input.GetKeyDown("space"))
+        state = _state;
+
+        switch (state)
         {
-            print("space key was pressed");
-            if (currentPartyMemberTurn >= 2)
-            {
-                currentPartyMemberTurn = 0;
-            }
-            else
-            {
-                currentPartyMemberTurn++;
-            }
+            case BattleState.START:
+                SetupBattle();
+                break;
+            case BattleState.PLAYERTURN:
+                SetHUD();
+                PlayerTurn();
+                break;
+            case BattleState.ENEMYTURN:
+                SetHUD();
+                EnemyAttack();
+                break;
+            case BattleState.QTE:
+                QTETime();
+                break;
+            case BattleState.LOST:
+                StartCoroutine(OnBattleOver());
+                break;
+            case BattleState.WON:
+                StartCoroutine(OnBattleOver());
+                break;
         }
+
+
     }
 
     //setting up the right actors at the right positions
     void SetupBattle()
     {
+        BGM.ChangeBGM(true);
+        player.canMove = false;
         //decides randomly based on array length what enemy to face // should probably make a if for a boss
         enemy = enemys[(int)Random.Range(0, enemys.Length)].Clone<Actor>();
-        string entryMessage = "A lazy " + enemy.name + "Showed up!!!";
-        DisplayMessage(entryMessage);
+        string entryMessage = "A " + enemy.name + "Showed up!!!";
+        StartCoroutine(MessageEnumarator(entryMessage));
+
 
         //reset hp and turns
+        metervalue = 0;
         enemy.ResetHealth();
+        enemy.ResetAP();
         currentPartyMemberTurn = 0;
+        enemy.ResetStatus();
+
+
+        foreach (Actor partymember in partyMembers)
+        {
+            partymember.ResetAP();
+            partymember.ResetHealth();
+            partymember.ResetStatus();
+        }
 
         //spawn player images
-        Instantiate(partyMembers[0].characterObject, partyMemberSpawn[0]);
-        Instantiate(partyMembers[1].characterObject, partyMemberSpawn[1]);
-        Instantiate(partyMembers[2].characterObject, partyMemberSpawn[2]);
+        PartymemberImage1 = (GameObject)Instantiate(partyMembers[0].characterObject, partyMemberSpawn[0]);
+        PartymemberImage2 = (GameObject)Instantiate(partyMembers[1].characterObject, partyMemberSpawn[1]);
+        PartymemberImage3 = (GameObject)Instantiate(partyMembers[2].characterObject, partyMemberSpawn[2]);
 
         //set the hud right
         SetHUD();
-        
+
         //in the enemies case i should make a randomizer that picks between a few diffrent actors to have the encounter be random
-        Instantiate(enemy.characterObject, enemySpawn);
-
-
-        state = BattleState.PLAYERTURN;
-        PlayerTurn();
+        enemyImage = (GameObject)Instantiate(enemy.characterObject, enemySpawn);
+        ChangeState(BattleState.PLAYERTURN);
     }
 
+    //refreshes ui
     public void SetHUD()
     {
+        //final attack meter
+        if(metervalue >= 100)
+        {
+            metervalue = 100;
+            finalAttackButton.SetActive(true);
+        }
+        else
+        {
+            finalAttackButton.SetActive(false);
+        }
+
+        float meterValue_ = metervalue / 100;
+        meterToFill.fillAmount = meterValue_;
+
+        //party ui
         for (int i = 0; i < partyMembers.Length; i++)
         {
             partyMemberName[i].text = partyMembers[i].name;
             partyMemberHP[i].text = "HP-" + partyMembers[i].health.ToString();
             partyMemberAP[i].text = "AP-" + partyMembers[i].ac.ToString();
+            partyMemberHPBar[i].fillAmount = partyMembers[i].health / 100;
+            partyMemberAPBar[i].fillAmount = partyMembers[i].ac / 100;
+
+            if (partyMembers[i].status == "posioned")
+            {
+                partyMemberStatus[i].sprite = icons.Poison;
+            }
+            else if(partyMembers[i].status == "sleep")
+            {
+                partyMemberStatus[i].sprite = icons.Sleep;
+            }
+            else if (partyMembers[i].status == "none")
+            {
+                partyMemberStatus[i].sprite = icons.None;
+            }
         }
 
+
+        //enemy ui 
         enemyName.text = enemy.name;
         enemyHP.text = "HP-" + enemy.health.ToString();
+        enemyHPBar.fillAmount = enemy.health / 100;
+
+        if (enemy.status == "posioned")
+        {
+            enemyStatus.sprite = icons.Poison;
+        }
+        else if (enemy.status == "sleep")
+        {
+            enemyStatus.sprite = icons.Sleep;
+        }
+        else if (enemy.status == "none")
+        {
+            enemyStatus.sprite = icons.None;
+        }
 
     }
 
@@ -117,49 +224,236 @@ public class NewBattleSystem : GenericWindow
         messageWindow.text = text;
     }
 
+    IEnumerator MessageEnumarator(string Text)
+    {
+        DisplayMessage(Text);
+        yield return new WaitForSeconds(0.1f);
+    }
 
+    //sets the players turn
     public void PlayerTurn()
     {
         if (state != BattleState.PLAYERTURN)
             return;
 
+        if (partyMembers[currentPartyMemberTurn].status == "posioned")
+        {
+            StartCoroutine(MessageEnumarator(partyMembers[currentPartyMemberTurn].name + " is posioned and takes 10 HP Damages"));
+            partyMembers[currentPartyMemberTurn].health -= 10;
+            SetHUD();
+        }
+        if (partyMembers[currentPartyMemberTurn].status == "sleep")
+        {
+            StartCoroutine(MessageEnumarator(partyMembers[currentPartyMemberTurn].name + " is sleeping and skips their turn"));
+            partyMembers[currentPartyMemberTurn].status = "none";
+            SetHUD();
+            ChangeState(BattleState.ENEMYTURN);
+            return;
+        }
+
+
+        for (int i = 0; i < partyMembers.Length; i++)
+        {
+            if(partyMembers[i] == partyMembers[currentPartyMemberTurn])
+            {
+                partyMemberName[i].color = Color.green;
+            }
+            else
+            {
+                partyMemberName[i].color = Color.white;
+            }
+
+        }
+
+        int partyDead = 0;
         
+       for (int i = 0; i < partyMembers.Length; i++)
+        {
+            if (partyMembers[i].health <= 0)
+            {
+                partyDead += 1;
+            }
+        }
         
+
+        if (partyDead >= 3)
+        {
+            ChangeState(BattleState.LOST);
+            return;
+        }
+
+        if (partyMembers[currentPartyMemberTurn].health <= 0)
+        {
+            if (currentPartyMemberTurn >= 2)
+            {
+                currentPartyMemberTurn = 0;
+            }
+            else
+            {
+                currentPartyMemberTurn++;
+            }
+            Debug.Log("player " + currentPartyMemberTurn + " turn");
+            PlayerTurn();
+        }
+
         Debug.Log("player " + currentPartyMemberTurn + " turn");
 
     }
 
-    public void OnActionsButton()
+    //open menu of actions that are dependend on the characters actions in scriptable objects
+    public void OnActionsButton(GameObject menu)
     {
         if (state != BattleState.PLAYERTURN)
             return;
-
-        //open menu of actions that are dependend on the characters actions in scriptable objects
-        partyMembersActionsMenu.SetActive(true);
-
+     
+        menu.SetActive(true);
         action1.SetButtons(partyMembers,currentPartyMemberTurn);
         action2.SetButtons(partyMembers, currentPartyMemberTurn);
         action3.SetButtons(partyMembers, currentPartyMemberTurn);
     }
 
-    public void OnItemsButton()
-    {
-        if (state != BattleState.PLAYERTURN)
-            return;
-
-        //open menu of actions that are dependend on the characters actions in scriptable objects
-        partyMembersItemsMenu.SetActive(true);
-
-        
-    }
-
     //what to do on attack / all are diffrent actions buttons will use this function
-    //and in it we will calculate based on the scriptable object value what happens
     public void OnAttackButton(int action)
     {
         if (state != BattleState.PLAYERTURN)
             return;
 
+        //check if they have enough action points for it
+        if(partyMembers[currentPartyMemberTurn].ac >= partyMembers[currentPartyMemberTurn].actions[action].apCost)
+        {           
+            partyMembers[currentPartyMemberTurn].ac -= partyMembers[currentPartyMemberTurn].actions[action].apCost;
+            ChangeState(BattleState.QTE);
+            _actionInt = action;
+        }
+        else
+        {
+            StartCoroutine(MessageEnumarator(partyMembers[currentPartyMemberTurn].name + " has to litte action points"));
+        }
+    }
+
+    //what to do on attack / all are diffrent actions buttons will use this function
+    public void OnFinalAttackButton()
+    {
+        if (state != BattleState.PLAYERTURN)
+            return;
+
+        metervalue = 0;
+        StartCoroutine(PlayerAttack(inventory.FinalAttack, partyMembers[currentPartyMemberTurn], enemy));
+    }
+     
+    public void QTETime()
+    {
+        //pop up the qte
+        QTEObject.SetActive(true);
+    }
+
+    public void QTEDamage(bool correct)
+    {
+        if (correct)
+        {
+            enemy.health -= 5;
+            metervalue += 15;
+            shakeManager.Shake(false, .5f, 1);
+            SetHUD();
+        }
+        StartCoroutine(PlayerAttack(partyMembers[currentPartyMemberTurn].actions[_actionInt], partyMembers[currentPartyMemberTurn], enemy));
+    }
+
+    IEnumerator KeyPressing()
+    {
+        return null;
+    }
+
+    IEnumerator PlayerAttack(GenericBattleAction action, Actor target1, Actor target2)
+    {
+        yield return new WaitForSeconds(1f);
+        var sb = new StringBuilder();
+        int Attack1Value_;
+        int Attack2Value_ = 0;
+        int Attack3Value_ = 0;
+        int CombinedValue_;
+        comboList.Clear();
+        partyMembersActionsMenu.SetActive(false);
+
+        //check if its a weakness , if yes do a follow up
+        if (action.element == target2.weaknessElement || action.property == target2.weaknessProperty)
+        {
+            comboList.Add(action);
+            Attack1Value_ = action.attackValue_;
+            metervalue += 10;
+
+            yield return new WaitForSeconds(0.2f);
+            //find the next party member in the array
+            int nextmember = currentPartyMemberTurn + 1;
+            if(nextmember >= 3)
+            {
+                nextmember = 0;
+            }
+            GenericBattleAction comboAttack1 = null;
+            if(partyMembers[nextmember].health > 0)
+            {
+                foreach (GenericBattleAction attack in partyMembers[nextmember].actions)
+                {
+                    if (attack.element == action.element || attack.property == action.property)
+                    {
+                        sb.Append("Combination strike!!! ");
+                        comboAttack1 = attack;
+                        metervalue += 10;
+                        comboList.Add(comboAttack1);
+                        break;
+                    }
+                }
+            }
+
+            nextmember = currentPartyMemberTurn - 1;
+            if (nextmember <= -1)
+            {
+                nextmember = 2;
+            }
+            yield return new WaitForSeconds(0.2f);
+            GenericBattleAction comboAttack2 = null;
+
+            if (partyMembers[nextmember].health > 0)
+            {
+                foreach (GenericBattleAction attack in partyMembers[nextmember].actions)
+                {
+                    if (attack.element == action.element || attack.property == action.property)
+                    {
+                        comboAttack2 = attack;
+                        metervalue += 10;
+                        comboList.Add(comboAttack2);
+                        break;
+                    }
+                }
+            }
+
+            //execute action
+            CombinedValue_ = Attack1Value_ + Attack2Value_ + Attack3Value_;
+            action.ComboAction(target1, target2, comboList, "Party Combo ", enemySpawn);
+            //sets value in hud
+            SetHUD();
+            StartCoroutine(MessageEnumarator(action.ToString()));
+            DamText.SetActive(true);
+            DamText.GetComponent<Text>().text = "-" + action.attackValue_.ToString();
+            
+        }
+        else
+        {
+            //calculate and deal damage 
+            action.Action(target1, target2, action, action.name,enemySpawn);//player atk monster
+            DamText.SetActive(true);
+            DamText.GetComponent<Text>().text = "-" + action.attackValue_.ToString();
+            //sets value in hud
+            SetHUD();
+            sb.Append(action.ToString());
+            Attack1Value_ = action.attackValue_;
+            comboList.Add(action);
+            StartCoroutine(MessageEnumarator(sb.ToString()));
+
+            
+        }
+
+        //pass turn to next member
         if (currentPartyMemberTurn >= 2)
         {
             currentPartyMemberTurn = 0;
@@ -169,74 +463,248 @@ public class NewBattleSystem : GenericWindow
             currentPartyMemberTurn++;
         }
 
-
-        StartCoroutine(PlayerAttack(partyMembers[currentPartyMemberTurn].actions[action], partyMembers[currentPartyMemberTurn],enemy));
-    }
-
-    IEnumerator PlayerAttack(GenericBattleAction action, Actor target1, Actor target2)
-    {
-        //calculate and deal damage 
-        action.Action(target1, target2, action);//player atk monster
-
-        //sets value in hud
-        SetHUD();
-        shakeManager.Shake(enemyWindowRect, .5f, 1);
-
-        DisplayMessage(action.ToString());
-        partyMembersActionsMenu.SetActive(false);
-
-        yield return new WaitForSeconds(2f);
-
-        // check if enemy is deade
-        //change state based on what happen enemy alive = enemy turn / enemy dead = end battle
-        if(enemy.health <= 0)
-        {
-            state = BattleState.WON;
-            StartCoroutine(OnBattleOver());
-        }
-        else
-        {
-            state = BattleState.ENEMYTURN;
-            StartCoroutine(EnemyAttack());
-        }
+        //animation for attacks
+        StartCoroutine(AnimationProgress(comboList, enemySpawn, true));
         
     }
 
-    IEnumerator EnemyAttack()
+    //opens items menu
+    public void OnItemsButton()
     {
-        GenericBattleAction action = enemy.actions[0];
-        Actor target = partyMembers[(int)Random.Range(0, partyMembers.Length)];
+        if (state != BattleState.PLAYERTURN)
+            return;
 
-        //calculate and deal damage 
-        action.Action(enemy, target, action);//player atk monster
+        //open menu of actions that are dependend on the characters actions in scriptable objects
+        partyMembersItemsMenu.SetActive(true);
+        item1.SetItemButtons(inventory, 0);
+        item2.SetItemButtons(inventory, 1);
+    }
 
-        //sets value in hud
-        SetHUD();
-        shakeManager.Shake(partyWindowRect, .5f, 1);
+    //check uses , define action depending on button
+    public void OnItemsButtonPress(int action)
+    {
+        if (state != BattleState.PLAYERTURN)
+            return;
 
-        DisplayMessage(action.ToString());
-        partyMembersActionsMenu.SetActive(false);
-
-        yield return new WaitForSeconds(2f);
-
-        // check if enemy is deade
-        //change state based on what happen enemy alive = enemy turn / enemy dead = end battle
-        state = BattleState.PLAYERTURN;
+        if (inventory.items[action].uses <= 0)
+        {
+            StartCoroutine(MessageEnumarator("There's no " + inventory.items[action].name + " in the parties inventory"));
+        }
+        else
+        {
+            partyMembersSelecionMenu.SetActive(true);
+            item_ = inventory.items[action];
+            memberButton1.SetButtonsTargets(partyMembers[0]);
+            memberButton2.SetButtonsTargets(partyMembers[1]);
+            memberButton3.SetButtonsTargets(partyMembers[2]);
+        }
 
     }
 
+    public void SelectTargetItem(int partyMember)
+    {
+        if (state != BattleState.PLAYERTURN)
+            return;
+
+        StartCoroutine(UsingItem(item_, partyMembers[partyMember]));
+    }
+
+    IEnumerator UsingItem(Item item, Actor target)
+    {
+        //increas values
+        target.health += item.healthAmount;
+        target.ac += item.apAmount;
+
+        //check so we dont go over max values
+        if (target.health > target.maxHealth)
+        {
+            target.health = target.maxHealth;
+        }
+
+        if (target.ac > target.maxAc)
+        {
+            target.ac = target.maxAc;
+        }
+
+        item.uses -= 1;
+
+        //sets value in hud
+        SetHUD();
+        shakeManager.Shake(true, .5f, 1);
+
+        StartCoroutine(MessageEnumarator(target.name + " feels energized"));
+        partyMembersItemsMenu.SetActive(false);
+        partyMembersSelecionMenu.SetActive(false);
+
+        yield return new WaitForSeconds(2f);
+
+        //move turn counter
+        if (currentPartyMemberTurn >= 2)
+        {
+            currentPartyMemberTurn = 0;
+        }
+        else
+        {
+            currentPartyMemberTurn++;
+        }
+
+        //set battle state
+        ChangeState(BattleState.ENEMYTURN);
+    }
+
+
+    //what to do on attack / all are diffrent actions buttons will use this function
+    public void OnRunButton()
+    {
+        if (state != BattleState.PLAYERTURN)
+            return;
+
+        StartCoroutine(OnRun());
+    }
+
+    //run command 
+    IEnumerator OnRun()
+    {
+
+        var chance = Random.Range(0, 1f);
+        if (chance < runOdds)
+        {
+            StartCoroutine(MessageEnumarator("You where able to run away"));
+            yield return new WaitForSeconds(2);
+            CloseWindow();
+            if (battleOverCallback != null)
+                battleOverCallback(partyMembers[0].alive);
+        }
+        else
+        {
+            StartCoroutine(MessageEnumarator("You where not able to run away"));
+            yield return new WaitForSeconds(2);
+            ChangeState(BattleState.ENEMYTURN);
+        }
+    }
+
+    public void EnemyAttack()
+    {
+        //we select a action for the enemy
+        GenericBattleAction action = enemy.actions[(int)Random.Range(0, enemy.actions.Length)];
+
+        //clear the potencialTargets in case players revived or something
+        potencialTargets.Clear();
+        comboList.Clear();
+
+        if(enemy.status == "posioned")
+        {
+            Debug.Log("IM POSIONED");
+            StartCoroutine(MessageEnumarator(enemy.name + " is posioned and takes 10 HP Damages"));
+            enemy.health -= 10;
+        }
+        if(enemy.status == "sleep")
+        {
+            StartCoroutine(MessageEnumarator(enemy.name + " is sleeping and skips their turn"));
+            enemy.status = "none";
+            SetHUD();
+            ChangeState(BattleState.PLAYERTURN);
+            return;
+        }
+
+        //fill up the list of targets
+        foreach (Actor partymember in partyMembers)
+        {
+            if (partymember.health > 0)
+            {
+                potencialTargets.Add(partymember);
+                Debug.Log("added to list" + partymember);
+            }
+        }
+        //select one to target with attack
+        Actor target = potencialTargets[(int)Random.Range(0, potencialTargets.Count)];
+
+        if (action.element == target.weaknessElement || action.property == target.weaknessProperty)
+        {
+            comboList.Add(action);
+            foreach (GenericBattleAction attack in enemy.actions)
+            {
+                if (attack.element == action.element || attack.property == action.property)
+                {
+                    comboList.Add(attack);
+                    break;
+                }
+            }
+            action.EnemyComboAction(enemy, target, comboList, action.name);
+        }
+        else
+        {
+            //calculate and deal damage 
+            comboList.Add(action);
+            action.EnemyAction(enemy, target, action, action.name);
+        }
+
+        //sets value in hud
+        SetHUD();
+        
+        Debug.Log(comboList);
+        StartCoroutine(MessageEnumarator(action.ToString()));
+        partyMembersActionsMenu.SetActive(false);
+
+        //find the image of the party member to shoot the animation at
+        GameObject targetTransform = GameObject.Find(target.characterObject.name + "(Clone)");
+
+        //head to doing the animations for attacks
+        StartCoroutine(AnimationProgress(comboList, targetTransform.transform, false));
+    }
+
+    //animation phase 
+    IEnumerator AnimationProgress(List<GenericBattleAction> attack,Transform enemySpawn_, bool playerturn)
+    {
+
+        if (playerturn)
+        {
+            for (int i = 0; i < attack.Count; i++)
+            {
+                GameObject attackobject;
+                attackobject = Instantiate(attack[i].AnimationHolder, enemySpawn_);
+                shakeManager.Shake(false, .5f, 1);
+                //find the animator
+                Animator _anim = attackobject.GetComponent<Animator>();
+
+                //get the animation clip
+                AnimatorClipInfo[] CurrentClipInfo;
+                CurrentClipInfo = _anim.GetCurrentAnimatorClipInfo(0);
+                //apply it to a float
+                float lenght = CurrentClipInfo[0].clip.length;
+                yield return new WaitForSeconds(lenght + 0.3f);
+            }
+
+            //make this wait the full float
+            yield return new WaitForSeconds(2);
+            //change state based on what happen enemy alive = enemy turn / enemy dead = end battle
+            if (enemy.health <= 0)
+            {
+                ChangeState(BattleState.WON);
+            }
+            else
+            {
+                ChangeState(BattleState.ENEMYTURN);
+            }
+        }
+        else
+        {
+            for (int i = 0; i < attack.Count; i++)
+            {
+                Instantiate(attack[i].AnimationHolder, enemySpawn_);
+                shakeManager.Shake(true, .5f, 1);
+                yield return new WaitForSeconds(0.5f);
+            }
+            yield return new WaitForSeconds(2);
+            ChangeState(BattleState.PLAYERTURN);
+        }
+    }
 
     IEnumerator OnBattleOver()
     {
-        var message = (partyMembers[0].alive ? "The team" : enemy.name) + " has won the battle";
-        var gold = Random.Range(0, enemy.gold);
-        if (gold > 0 && partyMembers[0].alive)
-        {
-            message += " " + partyMembers[0].name + " recieves $" + gold + ".";
-            partyMembers[0].IncreaseGold(gold);
-            SetHUD();
-
-        }
+        
+        var message = (partyMembers[0].alive ? "The team has won the battle. And gains " + enemy.goldReward + " gold ": enemy.name);
+        inventory.money += enemy.goldReward;
 
         yield return new WaitForSeconds(1);
         DisplayMessage(message);
@@ -246,21 +714,23 @@ public class NewBattleSystem : GenericWindow
         if (battleOverCallback != null)
             battleOverCallback(partyMembers[0].alive);
 
+        BGM.ChangeBGM(false);
         CloseWindow();
-
-
-
     }
 
     void CloseWindow()
     {
+        player.canMove = true;
+        Destroy(PartymemberImage1);
+        Destroy(PartymemberImage2);
+        Destroy(PartymemberImage3);
+        Destroy(enemyImage);
         this.Close();
-        //playerMan.BattleOver();
     }
 
-    public void BackOutMenu()
+    public void BackOutMenu(GameObject menu)
     {
-        partyMembersActionsMenu.SetActive(false);
+        menu.SetActive(false);
     }
 
 

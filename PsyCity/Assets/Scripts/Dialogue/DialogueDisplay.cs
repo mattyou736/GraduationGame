@@ -15,6 +15,10 @@ public class DialogueDisplay : MonoBehaviour
     private int ActiveLineIndex = 0;
 
     public bool inDialogueZone;
+    public GameObject interactionUI;
+
+    PlayerMovement player;
+
 
     // Start is called before the first frame update
     void Start()
@@ -24,14 +28,17 @@ public class DialogueDisplay : MonoBehaviour
 
         speakerUILeft.Speaker = conversation.speakerLeft;
         speakerUIRight.Speaker = conversation.speakerRight;
+
+        player = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerMovement>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown("space") && inDialogueZone)
+        if (Input.GetKeyDown(KeyCode.E) && inDialogueZone)
         {
             AdvanceConversation();
+            interactionUI.SetActive(false);
         }
     }
 
@@ -43,26 +50,39 @@ public class DialogueDisplay : MonoBehaviour
         }
     }
 
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.tag == "Player")
+        {
+            interactionUI.SetActive(true);
+        }
+    }
+
     private void OnTriggerExit2D(Collider2D collision)
     {
         if (collision.tag == "Player")
         {
             inDialogueZone = false;
+            interactionUI.SetActive(false);
         }
     }
 
     void AdvanceConversation()
     {
+        
+
         if(ActiveLineIndex < conversation.lines.Length)
         {
             DisplayLine();
             ActiveLineIndex += 1;
+            player.canMove = false;
         }
         else
         {
             speakerUILeft.Hide();
             speakerUIRight.Hide();
             ActiveLineIndex = 0;
+            player.canMove = true;
         }
     }
 

@@ -11,33 +11,31 @@ public class Actor : ScriptableObject
     public Image characterImage;
 
     [Header("Stats")]
-    public int health;
-    public int maxHealth;
-    public int speed;
+    public float health;
+    public float maxHealth;
 
     [Header("Action Points")]
-    public int ac;
-    public int maxAc;
+    public float ac;
+    public float maxAc;
 
-    [Header("Weakness Element")]
-    public bool fire;
-    public bool lighting;
-    public bool water;
-    public bool neutral;
+    [Header("Weakness Element: Fire/Lightning/Water/Neutral")]
+    public string weaknessElement;
+    
 
-    [Header("Weakness Property")]
-    public bool physical;
-    public bool ranged;
-    public bool slicing;
+    [Header("Weakness Property: Physical/Ranged/Slicing")]
+    public string weaknessProperty;
 
+    [Header("Property: Fire/Lightning/Water/Physical/Ranged/Slicing")]
+    public string resistance;
 
     public GenericBattleAction[] actions;
 
+    [Header("Property: none/posioned/sleep")]
+    public string status;
 
+    public float goldReward;
 
     //should be removed and added somewhere else-----
-    //money its carrying
-    public int gold;
     public Vector2 attackRange = Vector2.one;
     //-----------------------------------------------
 
@@ -59,13 +57,14 @@ public class Actor : ScriptableObject
         health = maxHealth;
     }
 
-    public void IncreaseGold(int value)
+    public void ResetAP()
     {
-        gold += value;
+        ac = maxAc;
     }
-    public void DecreaseGold(int value)
+
+    public void ResetStatus()
     {
-        gold -= value;
+        status = "none";
     }
 
     //cloning  actor 
@@ -77,24 +76,20 @@ public class Actor : ScriptableObject
         clone.characterImage = characterImage;
         clone.health = health;
         clone.maxHealth = maxHealth;
-        clone.speed = speed;
         clone.ac = ac;
         clone.maxAc = maxAc;
 
         //weaknesses
-        clone.fire = fire;
-        clone.lighting = lighting;
-        clone.water = water;
-        clone.neutral = neutral;
-        clone.physical = physical;
-        clone.ranged = ranged;
-        clone.slicing = slicing;
+        clone.weaknessElement = weaknessElement;
+        clone.weaknessProperty = weaknessProperty;
+        clone.resistance = resistance;
+        
 
         //actions
         clone.actions = actions;
-
-        clone.gold = gold;
         clone.attackRange = attackRange;
+
+        clone.goldReward = goldReward;
 
         return clone;
 

@@ -1,1 +1,1 @@
-public enum Windows{None,DefaultWindow,BattleScreen,MessageWindow}
+public enum Windows{None,StartMenu,DefaultWindow,BattleScreen,MessageWindow,MoveSetShop,ItemShop}

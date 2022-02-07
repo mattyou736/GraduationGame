@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba1180d9f0aa8a045b95d1e778b59eb3, type: 3}
+  m_Name: SlimeActor
+  m_EditorClassIdentifier: 
+  name: Slime
+  characterObject: {fileID: 4867891629077862438, guid: 7a00c5f70117f734fa26b51a11014580,
+    type: 3}
+  characterImage: {fileID: 6017124314710041744, guid: 7a00c5f70117f734fa26b51a11014580,
+    type: 3}
+  health: 0
+  maxHealth: 100
+  ac: 0
+  maxAc: 0
+  weaknessElement: Lightning
+  weaknessProperty: None
+  resistance: Fire
+  actions:
+  - {fileID: 11400000, guid: 17cfd554ce3fa3f4dbabdddf2678ad37, type: 2}
+  - {fileID: 11400000, guid: 45e936b05db06b54ba3da7ed8a1e5618, type: 2}
+  - {fileID: 11400000, guid: 9fed44efb5ee65c4c8c7577314912bff, type: 2}
+  - {fileID: 11400000, guid: 9b456f5c4d8fae34e832c176a3d4e55d, type: 2}
+  status: 
+  goldReward: 10
+  attackRange: {x: 0, y: 20}

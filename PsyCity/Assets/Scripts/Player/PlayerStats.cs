@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerStats : MonoBehaviour
 {
@@ -13,6 +14,8 @@ public class PlayerStats : MonoBehaviour
     //public GameObject battleWindow;
 
     public BattleWindow battleWindow;
+
+    public MoveSetChanger moveShopWindow;
     //mesage window
     public WindowManager windowManager
     {
@@ -22,21 +25,27 @@ public class PlayerStats : MonoBehaviour
         }
     }
 
+    public string endScene;
+
     public void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Q))
+       
+        if (Input.GetKeyDown(KeyCode.E))
         {
-            Debug.Log("Q pressed");
-            GoBattle();
+            Debug.Log("E pressed");
+            //OpenShop();
         }
     }
 
     public void GoBattle()
     {
-        //battleWindow.SetActive(true);
         battleWindow = windowManager.Open((int)Windows.BattleScreen - 1, false) as BattleWindow;
-        //battleWindow.battleOverCallback += BattleOver;
-        //battleWindow.StartBattle(playerActor, monsterActor);
+        togglePlayerMovement = false;
+    }
+
+    public void OpenShop()
+    {
+        moveShopWindow = windowManager.Open((int)Windows.MoveSetShop - 1, false) as MoveSetChanger;
         togglePlayerMovement = false;
     }
 
@@ -45,5 +54,10 @@ public class PlayerStats : MonoBehaviour
         Debug.Log("closing window");
         battleWindow.Close();
         togglePlayerMovement = true;
+    }
+
+    public void LoadScene()
+    {
+        SceneManager.LoadScene(endScene);
     }
 }
